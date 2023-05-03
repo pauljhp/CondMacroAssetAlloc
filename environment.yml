@@ -1,0 +1,21 @@
+name: macroalloc_env
+channels:
+  - defaults
+  - pytorch
+dependencies:
+  - python=3.10
+  - scipy
+  - numpy
+  - scikit-learn
+  - pandas
+  - jupyter
+  - jupyterlab
+  - pytorch
+  - ipykernel
+  - ipywidgets
+  - pip
+  - pip:
+    - Office365-REST-Python-Client
+    - matplotlib
+    - plotly
+prefix: /opt/miniconda3/envs/macroalloc_env
