@@ -10,10 +10,28 @@ from full_fred.fred import Fred
 import pandas as pd
 import requests
 
+from typing import List
+
 os.environ["FRED_API_KEY"] = "bb1dadbc15fc4f349377288d14fb685f"
+FRED_CON = None
 
 
-def fred_get(fred_ids, con=Fred()):
+def fred_get_metadata(ser: str, con=FRED_CON) -> str:
+    """ Takes one single fred id, return a single fred id metadata string. """
+    if con is None:
+        FRED_CON = Fred()
+        con = FRED_CON
+
+    res = con.get_tags_for_a_series(ser)
+    return ' | '.join([i['notes'] for i in res['tags'] if i['notes']])
+
+
+def fred_get(fred_ids: List[str], con=FRED_CON) -> pd.DataFrame:
+    """ Takes a list of fred ids, returns a pandas DataFrame. """
+    if con is None:
+        FRED_CON = Fred()
+        con = FRED_CON
+
     _out = pd.DataFrame()
 
     for fred_id in fred_ids:
