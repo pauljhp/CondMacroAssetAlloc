@@ -18,4 +18,5 @@ dependencies:
     - Office365-REST-Python-Client
     - matplotlib
     - plotly
+    - seaborn
 prefix: /opt/miniconda3/envs/macroalloc_env
