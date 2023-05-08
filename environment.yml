@@ -11,6 +11,7 @@ dependencies:
   - jupyter
   - jupyterlab
   - pytorch
+  - statsmodels
   - ipykernel
   - ipywidgets
   - pip
