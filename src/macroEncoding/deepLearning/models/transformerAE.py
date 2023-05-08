@@ -37,12 +37,13 @@ class AutoEncoder(nn.Module):
             nn.Unflatten(-1, (self.window_size, self.dim)),
         )
         self.transformer_decoder = nn.TransformerDecoder(decoder_layer=decoder_layer, num_layers=num_transformer_layers)
-        
+        self.tanh = nn.Tanh()
 
     def encode(self, x: torch.tensor) -> Tuple[torch.tensor]:
         x_ = self.transformer_encoder(x)
         # x_ = torch.flatten(x_, 1, 2)
         z = self.linear_encoder(x_)
+        z = self.tanh(z)
         return x_, z
     
     def decode(self, z: torch.tensor, memory: torch.tensor) -> torch.tensor:
@@ -50,8 +51,8 @@ class AutoEncoder(nn.Module):
         y = self.transformer_decoder(y_, memory=memory)
         return y
 
-    def forward(self) -> torch.tensor:
-        x_, z = self.encode(X)
+    def forward(self, x) -> torch.tensor:
+        x_, z = self.encode(x)
         y_ = self.decode(z, x_)
         return y_
     
