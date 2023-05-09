@@ -8,7 +8,7 @@
 # tensorboard logs
 logs/
 src/**/logs/
-events.out*
+events.out.*
 
 # checkpoints
 *.pt
