@@ -5,8 +5,10 @@
 # pdf files
 *.pdf
 
-#logs
+# tensorboard logs
+logs/
 src/**/logs/
+events.out*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

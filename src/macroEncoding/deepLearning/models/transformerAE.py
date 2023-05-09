@@ -3,12 +3,6 @@ import torch.nn as nn
 import numpy as np
 from typing import Union, Tuple
 
-
-
-import torch.nn as nn
-from typing import Tuple
-
-
 class AutoEncoder(nn.Module):
     def __init__(self, 
                  window_size: int=60,
@@ -23,7 +17,9 @@ class AutoEncoder(nn.Module):
         decoder_layer = nn.TransformerDecoderLayer(d_model=dim, nhead=nhead, batch_first=True)
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer=encoder_layer, num_layers=num_transformer_layers)
         self.linear_encoder = nn.Sequential(
+            # nn.Conv1d(in_channels=dim, out_channels=dim, kernel_size=3),
             nn.Flatten(1, -1),
+            nn.BatchNorm1d(num_features=dim * window_size),
             nn.Linear(dim * window_size, dim * window_size // 4),
             nn.Linear(dim * window_size // 4, dim * window_size // 4 ** 2),
             nn.Linear(dim * window_size // 4 ** 2, dim * window_size // 4 ** 3),
@@ -34,7 +30,9 @@ class AutoEncoder(nn.Module):
             nn.Linear(dim * window_size // 4 ** 3, dim * window_size // 4 ** 2),
             nn.Linear(dim * window_size // 4 ** 2, dim * window_size // 4),
             nn.Linear(dim * window_size // 4, dim * window_size),
+            nn.BatchNorm1d(num_features=dim * window_size),
             nn.Unflatten(-1, (self.window_size, self.dim)),
+            # nn.Conv1d(in_channels=dim, out_channels=dim, kernel_size=1)
         )
         self.transformer_decoder = nn.TransformerDecoder(decoder_layer=decoder_layer, num_layers=num_transformer_layers)
         self.tanh = nn.Tanh()
