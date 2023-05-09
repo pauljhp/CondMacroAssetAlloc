@@ -20,4 +20,7 @@ dependencies:
     - matplotlib
     - plotly
     - seaborn
+    - tensorboardx
+    - tensorx
+    - tensorflow # for using the tensorx library
 prefix: /opt/miniconda3/envs/macroalloc_env
