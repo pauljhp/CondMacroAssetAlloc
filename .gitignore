@@ -10,6 +10,10 @@ logs/
 src/**/logs/
 events.out*
 
+# checkpoints
+*.pt
+checkpoints/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
