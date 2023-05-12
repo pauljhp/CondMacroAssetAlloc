@@ -1,0 +1,8 @@
+﻿asset_class,region,sub_class,etf_ticker,en_desc,bbg_code
+Equity,US,Total Market,SPY,S&P 500,SPX Index
+Equity,US,Tech,QQQ,Nasdaq 100,NDX Index
+Cash,US,Ultra Short Term,BIL,U.S. Trsy <3mth,LD12TRUU Index
+Fixed Income,US,Total Market,AGG,U.S. Fixed Income (IG),LBUSTRUU Index
+Alternative,Alternative,REITs,VNQ,U.S. Real Estate,VNQ US Equity
+Commodities,Commodities,Commodities,DBC,U.S. Comdty Comp Idx,DBC US Equity
+Gold,Alternative,Gold,IAU,iShares Gold Trust,IAU US Equity

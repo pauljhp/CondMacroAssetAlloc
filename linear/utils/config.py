@@ -1,0 +1,1 @@
+BBG_CON = ('bbg.algo-api.aqumon.com', 8194)
