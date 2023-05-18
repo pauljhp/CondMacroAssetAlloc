@@ -1,1 +1,1 @@
-BBG_CON = ('bbg.algo-api.aqumon.com', 8194)
+BBG_CON = ... # 2-tuple (URL, PORT)
