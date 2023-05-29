@@ -27,18 +27,16 @@ def main(config_, load_local=True):
     # 1/ Read data
     gdp = from_csv('./inp/gdp_zscore.csv')
     cpi = from_csv('./inp/cpi_zscore.csv')
-    fci = from_csv('./inp/fci_zscore_macro.csv')
 
     # 2/ Compose macro data
     from utils.transform import savgol_pd, normalize
     savgol = lambda x: savgol_pd(x, 12, 3, 0)
 
     compo = pd.concat([
-        savgol(normalize(gdp.diff(3))[0]),
-        savgol(normalize(cpi.diff(3))[0]),
-        savgol(normalize(fci)[0]),
+        savgol(gdp),
+        savgol(cpi),
     ], axis=1)
-    compo.columns = ['economic', 'inflation', 'financial_condition']
+    compo.columns = ['GDP', 'CPI']
 
     # 3/ Backtest Data Preparation
     df_symbols = pd.read_csv('underlyings.csv')
@@ -51,37 +49,13 @@ def main(config_, load_local=True):
     df_asset_perf = df_asset_perf.loc[:date_config['date_end']]
 
     # 4/ Perform Backtest
-    thres_ = {'economic': -0.1, 'inflation': -0.2, 'financial_condition': 0.3}
+    cutoff = compo.rolling(120, min_periods=36).quantile(0.5)
+    compo = (compo > cutoff).astype(int)
+    compo['state'] = compo.loc[cutoff.dropna().index].apply(lambda x: int(''.join(map(str, x)), 2), axis=1)
 
-    print(f"{thres_=}")
-    compo_ = compo.ffill().copy()
-
-    for k in compo_.columns:
-        compo_.loc[:, k] = compo_.loc[:, k].apply(lambda x: "1" if x > thres_[k] else "0")
-
-    # 3-phase ML clock
-    if 'rates' in compo_.columns:
-        compo_.loc[(compo_.economic == '0') & (compo_.inflation == '0') & (compo_.rates == '0'), 'state'] = 0
-        compo_.loc[(compo_.economic == '1') & (compo_.inflation == '0') & (compo_.rates == '0'), 'state'] = 1
-        compo_.loc[(compo_.economic == '1') & (compo_.inflation == '1') & (compo_.rates == '0'), 'state'] = 2
-        compo_.loc[(compo_.economic == '0') & (compo_.inflation == '1') & (compo_.rates == '0'), 'state'] = 3
-        compo_.loc[(compo_.economic == '0') & (compo_.inflation == '0') & (compo_.rates == '1'), 'state'] = 4
-        compo_.loc[(compo_.economic == '1') & (compo_.inflation == '0') & (compo_.rates == '1'), 'state'] = 5
-        compo_.loc[(compo_.economic == '1') & (compo_.inflation == '1') & (compo_.rates == '1'), 'state'] = 6
-        compo_.loc[(compo_.economic == '0') & (compo_.inflation == '1') & (compo_.rates == '1'), 'state'] = 7
-
-    if 'financial_condition' in compo_.columns:
-        compo_.loc[(compo_.economic == '0') & (compo_.inflation == '0') & (compo_.financial_condition == '0'), 'state'] = 0
-        compo_.loc[(compo_.economic == '1') & (compo_.inflation == '0') & (compo_.financial_condition == '0'), 'state'] = 1
-        compo_.loc[(compo_.economic == '1') & (compo_.inflation == '1') & (compo_.financial_condition == '0'), 'state'] = 2
-        compo_.loc[(compo_.economic == '0') & (compo_.inflation == '1') & (compo_.financial_condition == '0'), 'state'] = 3
-        compo_.loc[(compo_.economic == '0') & (compo_.inflation == '0') & (compo_.financial_condition == '1'), 'state'] = 4
-        compo_.loc[(compo_.economic == '1') & (compo_.inflation == '0') & (compo_.financial_condition == '1'), 'state'] = 5
-        compo_.loc[(compo_.economic == '1') & (compo_.inflation == '1') & (compo_.financial_condition == '1'), 'state'] = 6
-        compo_.loc[(compo_.economic == '0') & (compo_.inflation == '1') & (compo_.financial_condition == '1'), 'state'] = 7
-
+    compo_ = compo.copy()
     state = compo_.state
-    df_comp_phases = state.rename('macro_phase').to_frame().resample('W').ffill().loc["2001-01-01":].astype(int)
+    df_comp_phases = state.rename('macro_phase').to_frame().resample('W').ffill().loc["2001-01-01":].dropna().astype(int)
 
     # portfolio preprocess and optimization
     e_cases = ensemble_create_cases(
@@ -157,7 +131,7 @@ def main(config_, load_local=True):
     #
     # # (df_comp_phases.squeeze().apply(int).value_counts() / len(df_comp_phases)).apply(lambda x: f"{x:.2%}")
     # tbl = compo_.reset_index().drop('index', axis=1)
-    # tally = tbl.groupby('state').min().applymap(lambda x: {'0': '-', '1': '+'}[x])
+    # tally = tbl.groupby('state').min().applymap(lambda x: {0: '-', 1: '+'}[x])
     # tally.loc[:, 'state_count'] = (
     #     tally.index.map(int).map(
     #         (df_comp_phases.squeeze().apply(int).value_counts() / len(df_comp_phases)).apply(lambda x: f"{x:.2%}")

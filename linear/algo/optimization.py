@@ -1,6 +1,6 @@
-import os
 import time
 
+import cvxpy as cp
 import numpy as np
 from scipy.optimize import minimize
 
@@ -15,7 +15,6 @@ def _cpsd(mat: np.array):
 
 
 def max_sharpe_cvxpy(price=None, roll_price=None, cov_base=None, upper_bound_default=0.3, upper_bound_dict=None, **kwargs):
-    import cvxpy as cp
     sel_ = roll_price.columns[(price.count() >= 3)]
     force_psd = kwargs.get('force_psd', False)
 
