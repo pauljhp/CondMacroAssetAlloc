@@ -5,6 +5,7 @@ import statsmodels.api as smapi
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import PowerTransformer
 
+from scipy.stats.mstats import winsorize as c_winsorize
 from scipy.signal import savgol_filter
 
 
@@ -71,9 +72,6 @@ def normalize(df,
         Returns:
             @DataFrame dat: the transformed dataframe.
     """
-    # return df, None
-    dat = df.copy()
-    # qtr = QuantileTransformer(n_quantiles=100, output_distribution="normal")
 
     if not clip_range:
         clip_range = (-99, 99)
@@ -83,48 +81,39 @@ def normalize(df,
 
     if not ptr:
         if verbose:
-            print("[PowerTransformer] Creating new transformers.")
+            print("[PowerTransformer] Creating new power transformer.")
 
-        ptr = []
-        for col in df.columns:
-            if col in skip_col:
-                ptr.append(None)
-                continue
+        _ptr = PowerTransformer(method="yeo-johnson")
+        _df = df.replace([np.inf, -np.inf], np.nan)
+        _arr = _df.values
 
-            _ptr = PowerTransformer(method="yeo-johnson")
-            clean_col = df[col].replace([np.inf, -np.inf], np.nan)
+        if winsorize:
+            _arr = c_winsorize(_arr, limits=[0.01, 0.01], axis=0)
 
-            if winsorize:
-                clean_col = winsorize_(clean_col)
-
-            dat[col] = _ptr.fit_transform(np.array(clean_col).reshape(-1, 1)).clip(*clip_range)
-            ptr.append(_ptr)
+        _arr_ptr = _ptr.fit_transform(_arr).clip(*clip_range)
 
         if verbose:
-            print(f"[PowerTransformer] Created and applied {len(ptr)} transformers.")
+            print(f"[PowerTransformer] Fit and applied power transform.")
+
     else:
         if verbose:
             print("[PowerTransformer] Using existing transformer.")
 
-        for ix, col in enumerate(df.columns):
-            if col in skip_col:
-                continue
+        _df = df.replace([np.inf, -np.inf], np.nan)
+        _arr = _df.values
 
-            clean_col = df[col].replace([np.inf, -np.inf], np.nan)
+        if winsorize:
+            _arr = c_winsorize(_arr, limits=[0.01, 0.01], axis=0)
 
-            if winsorize:
-                clip_winsorize = clean_col.quantile(0.01), clean_col.quantile(0.99)
-                clean_col = clean_col.clip(*clip_winsorize)
-
-            dat[col] = ptr[ix].transform(np.array(clean_col).reshape(-1, 1)).clip(*clip_range)
+        _arr_ptr = ptr.transform(_arr).clip(*clip_range)
 
         if verbose:
-            print(f"[PowerTransformer] Applied {len(ptr)} transformers.")
+            print(f"[PowerTransformer] Applied existing power transformer.")
 
-    if renormalize:
-        dat = dat.apply(lambda x: (x - np.mean(x)) / np.std(x), axis=1)
+        _ptr = ptr
 
-    return dat, ptr
+    df_normalized = pd.DataFrame(data=_arr_ptr, index=df.index, columns=df.columns)
+    return df_normalized, _ptr
 
 
 def get_curve(ser, deg=2, plot_crv=False):
