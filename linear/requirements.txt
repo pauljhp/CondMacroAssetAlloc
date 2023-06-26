@@ -1,23 +1,23 @@
 # You are suggest to resolve dependencies in the below order
-# CRITICAL: pathos cvxpy pandas numpy tabulate statsmodels
-# IMPORTANT: matplotlib scikit_learn (scikit-learn -c conda-forge) statsmodels
-# UTILITY full_fred datamaster tia
+# CRITICAL: pathos cvxpy pandas numpy tabulate statsmodels more_itertools
+# IMPORTANT: matplotlib scikit_learn scipy
+
 --extra-index-url https://bcms.bloomberg.com/pip/simple
 
-full-fred
-cvxpy
-matplotlib
-requests
-numpy
-oss2
-pandas
 pathos
-scikit_learn
-scipy
-statsmodels
-git+https://github.com/PaulMest/tia.git
+cvxpy
+pandas
+numpy
 tabulate
+statsmodels
 more_itertools
 
-# blpapi
+matplotlib
+scikit_learn
+scipy
+
+# Data APIs and deps
+full-fred
+requests
+git+https://github.com/PaulMest/tia.git
 blpapi
