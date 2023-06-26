@@ -17,6 +17,11 @@ Python 3.10
     2. Install research/visualization libraries with `python -m pip install matplotlib scikit_learn scipy`.
     3. Optionally, install the rest of the libraries mostly for data downloading.
 
+## Backtesting (linear)
+- In essence, you have to prepare a time series file, with date `[datetime64[ns]]` as index, and with one column named `macro_phase`.
+- If you are working with a model that produce a time series of states, refer to `./linear/baseline_dummy.py` for example run. The file shows how the code read from `./linear/inp/dummy.csv` into a proper `macro_phase` columns. 
+- Some extraneous code represent other manipulation you can perform on the original state encoding file, with such data in later part used for visualization purposes (refer to the data dump section in the `baseline_dummy.py` file).
+
 ## Get data
 
 
@@ -29,7 +34,7 @@ Timeseries data on a monthly frequency from FRED and Bloomberg are obtained.
 
 #### Factor models
 
-#### Machine leanring
+#### Machine learning
 
 
 ## Conditional asset allocation
