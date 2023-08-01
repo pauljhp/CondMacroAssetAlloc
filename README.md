@@ -22,19 +22,4 @@ Python 3.10
 - If you are working with a model that produce a time series of states, refer to `./linear/baseline_dummy.py` for example run. The file shows how the code read from `./linear/inp/dummy.csv` into a proper `macro_phase` columns. 
 - Some extraneous code represent other manipulation you can perform on the original state encoding file, with such data in later part used for visualization purposes (refer to the data dump section in the `baseline_dummy.py` file).
 
-## Get data
 
-
-## Macroeconomic condition encoding
-
-### Data
-Timeseries data on a monthly frequency from FRED and Bloomberg are obtained.
-
-### Methodology
-
-#### Factor models
-
-#### Machine learning
-
-
-## Conditional asset allocation
