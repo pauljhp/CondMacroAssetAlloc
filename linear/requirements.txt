@@ -1,0 +1,23 @@
+# You are suggest to resolve dependencies in the below order
+# CRITICAL: pathos cvxpy pandas numpy tabulate statsmodels more_itertools
+# IMPORTANT: matplotlib scikit_learn scipy
+
+--extra-index-url https://bcms.bloomberg.com/pip/simple
+
+pathos
+cvxpy
+pandas
+numpy
+tabulate
+statsmodels
+more_itertools
+
+matplotlib
+scikit_learn
+scipy
+
+# Data APIs and deps
+full-fred
+requests
+git+https://github.com/PaulMest/tia.git
+blpapi

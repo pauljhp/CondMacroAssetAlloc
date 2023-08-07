@@ -1,0 +1,1 @@
+BBG_CON = ... # 2-tuple (URL, PORT)
