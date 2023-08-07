@@ -12,6 +12,15 @@ import torch
 
 Number = Union[int, float, bool, np.int_, np.float_]
 
+B = pd.offsets.BDay
+D = pd.offsets.DateOffset
+W = pd.offsets.Week
+M = pd.offsets.MonthEnd
+Q = pd.offsets.QuarterEnd
+Y = pd.offsets.YearEnd
+
+
+
 def stationarity_test(
         sequence: Sequence[Number], 
         test_mode: Literal["ADF", "KPSS"]="ADF",
@@ -46,7 +55,8 @@ class PreProcessor:
         original_starts_ = data.iloc[:, 0]
         for colid, col in data.items():
             is_stationary = self.stationarity_mask[colid]
-            if not is_stationary[0]:
+            if not isinstance(is_stationary, np.bool_): is_stationary = is_stationary[0]
+            if not is_stationary:
                 stationarized[colid] = get_difference(col.values, self.differencing_offset)
         stationarized = stationarized.replace(float("inf"), replace_inf)
         stationarized = stationarized.replace(float("-inf"), -replace_inf)
@@ -88,19 +98,20 @@ class PreProcessor:
         self.stationarity_mask = self.data.apply(lambda x: stationarity_test(x), axis=0)
         self.differencing_offset = differencing_offset
 
-        train, val, test = self.train_val_test_split(split=train_val_test_split, data=self.data)
-        train_, original_starts_ = self.__stationarize(train)
+        _train, _val, _test = self.train_val_test_split(split=train_val_test_split, data=self.data)
+        train_, original_starts_ = self.__stationarize(_train)
         self.original_starts = original_starts_
         train_ = self.__normalize(train_, fit_data=True)
         self.mean_ = self.normalizer.mean_
         self.var_ = self.normalizer.var_
 
-        val_, _ = self.__stationarize(val)
+        val_, _ = self.__stationarize(_val)
         val_ = self.__normalize(val_)
 
-        test_, _ = self.__stationarize(test)
+        test_, _ = self.__stationarize(_test)
         test_ = self.__normalize(test_)
 
+        self._train, self._val, self._test = _train, _val, _test
         self.train, self.val, self.test = train_, val_, test_
 
     def split_data(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -143,3 +154,5 @@ def sliding_window_iter(data, window_size: int, enumeration: bool=False) -> Gene
                 yield i, data[i: i + window_size]
             else:
                 yield data[i: i + window_size]
+
+

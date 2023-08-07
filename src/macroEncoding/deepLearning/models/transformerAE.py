@@ -9,12 +9,14 @@ class AutoEncoder(nn.Module):
                  num_transformer_layers: int=3,
                  nhead: int=10,
                  dim: int=60,
-                 encoding_dims: int=5):
+                 encoding_dims: int=5,
+                 dropout: float=.1):
         super().__init__()
         self.window_size = window_size
         self.dim = dim
-        encoder_layer = nn.TransformerEncoderLayer(d_model=dim, nhead=nhead, batch_first=True)
-        decoder_layer = nn.TransformerDecoderLayer(d_model=dim, nhead=nhead, batch_first=True)
+        encoder_layer = nn.TransformerEncoderLayer(d_model=dim, nhead=nhead, batch_first=True, dropout=dropout)
+        decoder_layer = nn.TransformerDecoderLayer(d_model=dim, nhead=nhead, batch_first=True, dropout=dropout)
+        self.encoding_dims = encoding_dims
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer=encoder_layer, num_layers=num_transformer_layers)
         self.linear_encoder = nn.Sequential(
             # nn.Conv1d(in_channels=dim, out_channels=dim, kernel_size=3),

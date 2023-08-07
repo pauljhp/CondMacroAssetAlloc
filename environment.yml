@@ -21,6 +21,6 @@ dependencies:
     - plotly
     - seaborn
     - tensorboardx
-    - tensorx
-    - tensorflow # for using the tensorx library
+    # - tensorx
+    - tensorflow # for  full function with tensorboard
 prefix: /opt/miniconda3/envs/macroalloc_env
