@@ -46,6 +46,8 @@ def main(config_, load_local=True):
         symbols=df_symbols,
         load_local=load_local,
         verbose=True,
+        # date_start='2000-01-01',
+        # date_end='2023-03-31',
         **date_config
     )
     df_asset_perf = df_asset_perf.loc[:date_config['date_end']]
@@ -91,6 +93,22 @@ def main(config_, load_local=True):
             "dp": [1.5, 2., 2.5, 3.0],
         }
     )
+    #
+    # for case in e_cases:
+    #     res, wgt, *_ = port_asset_alloc(
+    #         model_name="Macro Model",
+    #         df_comp_phases=df_comp_phases,
+    #         df_price_master=df_asset_perf,
+    #         df_benchmark_metadata=df_benchmark_metadata,
+    #         use_fallback=False,
+    #         weight_func=max_sharpe_cvxpy,
+    #         cases=e_cases,
+    #         upper_bound_default=0.8,
+    #         upper_bound_dict={"VNQ US Equity": 0.25, "DBC US Equity": 0.25, "IAU US Equity": 0.25},
+    #         verbose=False,
+    #         **date_config,
+    #         **case,
+    #     )
 
     e_res = ensemble_execute(
         func=port_asset_alloc,
@@ -115,25 +133,37 @@ def main(config_, load_local=True):
     for top_config in top_configs:
         print(*top_config)
 
+    # retrieve optimal weight
+    nm = df_symbols.set_index('bbg_code').en_desc
+    optimal_weight.T.rename(nm, axis=1).plot.bar(stacked=True, title='Optimal weight under each phase')
+    plt.tight_layout()
+    plt.show()
+
     # backtest
+    _, df_asset_perf_backtest = port_data_preprocess(
+        symbols=df_symbols,
+        load_local=load_local,
+        verbose=False,
+        date_start='2000-01-01',
+        date_end='2023-03-31',
+        # **date_config
+    )
+
+    pwgt_ms = pretrained_weight.resample('MS').first()
     ret, wgt, ret_tx = port_backtest(
         model_name="top_mixed_weight",
         date_start='2011-01-01',
         date_end=date_config['date_end'],
-        df_price_master=df_asset_perf,
-        pretrained_weight=pretrained_weight,
+        df_price_master=df_asset_perf_backtest,
+        pretrained_weight=pwgt_ms,
     )
 
     # plot
     fig, ax = plt.subplots(figsize=(10, 4))
-    wgt.clip(0).plot.area(ax=ax, stacked=True, cmap='viridis')
+    wgt.rename(nm, axis=1).clip(0).plot.area(ax=ax, stacked=True, cmap='viridis', title="Backtesting return (starting NAV=$1 mio)")
     ax.legend(bbox_to_anchor=(0.5, -0.1), loc="upper center", ncol=5)
     plt.tight_layout()
     plt.show()
-
-    # analytics
-    analytics = create_analytics([ret, ], ).T
-    print(analytics.to_csv())
 
     # win rate
     compute_win_rate(
@@ -143,47 +173,47 @@ def main(config_, load_local=True):
         bl_views=bl_views
     )
 
-    # retrieve optimal weight
-    optimal_weight.T.rename(df_symbols.en_desc, axis=1).plot.bar(stacked=True, title='Optimal weight under each phase')
+    # analytics
+    analytics = create_analytics([ret, ], ).T
+    print("========== Monthly Rebalanced ==========")
+    print(analytics.to_csv())
+
+    pwgt_qs = pretrained_weight.resample('QS').first()
+    ret_qs, wgt_qs, _ = port_backtest(
+        model_name="top_mixed_weight",
+        date_start='2011-01-01',
+        date_end=date_config['date_end'],
+        df_price_master=df_asset_perf_backtest,
+        pretrained_weight=pwgt_qs,
+    )
+
+    # analytics
+    print("========== Quarterly Rebalanced ==========")
+    analytics = create_analytics([ret_qs, ], ).T
+    print(analytics.to_csv())
+
+    # compute turnover
+    ax = ret.cumsum().rename(lambda x: 'Monthly rebal - monthly', axis=1).plot(title='Strategy $ cumulative return / turnover', figsize=(10, 4))
+    turnover = (wgt.diff().fillna(wgt).resample('MS').first().abs().sum(axis=1) / wgt.resample('MS').first().sum(axis=1)).cumsum().rename('Monthly rebal - turnover').to_frame()
+    turnover.plot(ax=ax, secondary_y=True)
+    ret_qs.cumsum().rename(lambda x: 'Quarterly rebal - return', axis=1).plot(ax=ax)
+    (wgt.diff().fillna(wgt).resample('QS').first().abs().sum(axis=1) / wgt.resample('QS').first().sum(axis=1)).cumsum().rename('Quarterly rebal - turnover').to_frame().plot(ax=ax, secondary_y=True)
     plt.tight_layout()
     plt.show()
 
-    # # data dump
-    # views_by_phase = pd.concat([bl_views, df_comp_phases], axis=1).resample('MS').first().dropna().apply(np.round, decimals=6)
-    # views_by_phase.to_csv(os.path.join('research', 'out', 'bl_views.csv'), index=True)
-
-    # compo.to_csv('./research/out/model_display_us_4a_viz_signals.csv')
-    # df_comp_phases.resample('MS').first().to_csv('./research/out/model_display_us_4b_viz_phases.csv')
-    #
-    # # (df_comp_phases.squeeze().apply(int).value_counts() / len(df_comp_phases)).apply(lambda x: f"{x:.2%}")
-    # tbl = compo_.reset_index().drop('index', axis=1)
-    # tally = tbl.groupby('state').min().applymap(lambda x: {'0': '-', '1': '+'}[x])
-    # tally.loc[:, 'state_count'] = (
-    #     tally.index.map(int).map(
-    #         (df_comp_phases.squeeze().apply(int).value_counts() / len(df_comp_phases)).apply(lambda x: f"{x:.2%}")
-    #     )
-    # )
-    # tally.to_csv('./research/out/model_display_us_4c_viz_phase_description.csv')
-    #
-    # N_ROLL = 4
-    # df = ((1 + df_asset_perf)[::-1].rolling(N_ROLL, min_periods=1).apply(np.prod) - 1)[::-1]
-    # df2 = df.join(df_comp_phases.reindex(df_asset_perf.index, method='ffill').macro_phase)
-    # df2 = df2.loc[~pd.isna(df2.macro_phase), :]
-    # df3 = df2.copy()
-    # df3.columns = df3.columns.map(
-    #     df_benchmark_metadata.set_index('composite').asset_class.to_dict() | {'macro_phase': 'macro_phase'})
-    # df3 = df3.groupby(level=0, axis=1).mean()
-    # df_mean = 52 / N_ROLL * df3.groupby('macro_phase').mean()
-    # df_std = np.sqrt(52 / N_ROLL) * df3.groupby('macro_phase').std()
-    # df_sharpe = df_mean / df_std
-    #
-    # df_mean.to_csv('./research/out/model_display_us_5a_viz_asset_return_mean.csv')
-    # df_sharpe.to_csv('./research/out/model_display_us_5b_viz_asset_return_sharpe.csv')
-    # optimal_weight.to_csv('./research/out/model_display_us_5c_viz_optimal_weight.csv')
-    #
-    # ret.to_csv('./research/out/model_display_us_6a_viz_backtest_ret.csv')
-    # wgt.to_csv('./research/out/model_display_us_6a_viz_backtest_weight.csv')
-    # analytics.to_csv('./research/out/model_display_us_6b_viz_backtest_metrics.csv')
+    # outperformance
+    fig, bx = plt.subplots(figsize=(10, 4))
+    op = (
+        (1 + (1e6 + ret.cumsum()).resample('MS').last().pct_change()) /
+        (1 + (1e6 + ret_qs.cumsum()).resample('MS').last().pct_change())
+    ).fillna(1.).squeeze() - 1
+    op.plot.line(title='Outperformance of monthly vs quarterly', ax=bx, zorder=1, linestyle='None')
+    bx.set_ylim(-0.1, 0.1)
+    bx.fill_between(op.index, op.clip(-1, 0), 0, color='red', zorder=0)
+    bx.fill_between(op.index, 0, op.clip(0, 1), color='green', zorder=0)
+    plt.grid()
+    plt.tight_layout()
+    plt.show()
 
 
 def driver():
